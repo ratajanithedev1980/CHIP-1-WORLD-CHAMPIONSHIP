@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>CHIP-1 WORLD CHAMPIONSHIP</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        #hud {
+            position: absolute; top: 20px; left: 20px; color: #0f0;
+            background: rgba(0,20,0,0.8); padding: 20px; border: 2px solid #0f0;
+            line-height: 1.5; pointer-events: none;
+        }
+        #boost-bar-container { width: 200px; height: 10px; border: 1px solid #0f0; margin-top: 10px; }
+        #boost-bar { width: 0%; height: 100%; background: #ffcc00; transition: width 0.1s; }
+        #finish-screen {
+            display: none; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); background: rgba(0,0,0,0.9);
+            color: gold; padding: 50px; border: 5px solid gold; text-align: center;
+        }
+        .glitch { animation: glitch 1s linear infinite; }
+        .action-button {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #0f0;
+            color: #000;
+            border: 2px solid #0f0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .action-button:hover { transform: scale(1.05); background: #afff7a; }
+        .menu-btn {
+            display: inline-block;
+            border: 2px solid #0f0;
+            background: #000;
+            color: #0f0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .menu-btn:hover { background: #062; }
+        #version-label {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #afff7a;
+            opacity: 0.8;
+        }
+        .menu-input,
+        .menu-select {
+            width: calc(100% - 24px);
+            margin: 10px auto 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+            background: #000;
+            color: #0f0;
+            font-family: inherit;
+        }
+        #team-radio-panel {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .team-radio-btn {
+            border: 1px solid #0f0;
+            background: rgba(0,0,0,0.85);
+            color: #0f0;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.15s ease;
+        }
+        .team-radio-btn:hover { background: rgba(0,255,0,0.08); }
+        #punch-container {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0,0,0,0.85);
+            border: 2px solid #0f0;
+        }
+        #punch, #cart {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            margin: 5px;
+            border: 2px solid #0f0;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            font-size: 36px;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        #punch:hover, #cart:hover { transform: translateY(-2px); background: rgba(255,255,255,0.12); }
+        #punch-message {
+            color: #ff0;
+            margin-top: 10px;
+            min-height: 24px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #main-menu {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.98); z-index: 60; color: #0f0;
+        }
+        #menu-panel {
+            width: 420px; padding: 30px; border: 2px solid #0f0; background: rgba(0,0,0,0.95); text-align: center;
+        }
+        #menu-panel h1 { margin: 0 0 10px; font-size: 38px; }
+        #version-label { margin-top: 18px; font-size: 13px; color: #afff7a; opacity: 0.85; }
+        .menu-input, .menu-select { width: calc(100% - 24px); margin: 10px auto 0; padding: 10px; border: 1px solid #0f0; background: #000; color: #0f0; font-family: inherit; }
+        .team-radio-btn { border: 1px solid #0f0; background: rgba(0,0,0,0.85); color: #0f0; padding: 8px; cursor: pointer; font-size: 13px; transition: background 0.15s ease; }
+        .team-radio-btn:hover { background: rgba(0,255,0,0.08); }
+        #menu-text, #options-panel, #developers-panel {
+            background: rgba(0,0,0,0.9); border: 1px solid #0f0; padding: 14px; text-align: left; margin-top: 12px; display: none;
+        }
+        #end-screen {
+            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.97); color: #ffdc6b; z-index: 70; padding: 30px; overflow-y: auto; text-align: center;
+        }
+        #end-screen h1 { margin-top: 0; font-size: 42px; }
+        #end-screen .credit-block, #end-screen .poem-block { margin: 20px auto; max-width: 720px; text-align: left; border: 1px solid #0f0; padding: 20px; }
+        #end-screen audio { margin-top: 16px; width: 100%; max-width: 560px; }
+        #lid-effect {
+            display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.98); z-index: 65; pointer-events: none;
+            border: 4px solid #ff0; box-shadow: 0 0 40px rgba(255,255,0,0.8);
+        }
+        #lid-effect::before, #lid-effect::after {
+            content: '';
+            position: absolute;
+            width: 120%; height: 4px;
+            background: #ff0;
+            left: -10%;
+        }
+        #lid-effect::before { top: 45%; transform: rotate(12deg); }
+        #lid-effect::after { top: 55%; transform: rotate(-12deg); }
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+        }
+        /* Chat & username overlay */
+        #chat-panel { margin-top:10px; border-top:1px solid #0f0; padding-top:8px; }
+        #chat-messages { max-height:180px; overflow:auto; background:rgba(0,0,0,0.8); border:1px solid #0f0; padding:8px; font-size:13px; }
+        .chat-message { margin:6px 0; }
+        .chat-message .who { color:#afff7a; font-weight:bold; margin-right:6px; }
+        #chat-input { width:calc(100% - 74px); padding:6px; box-sizing:border-box; }
+        #chat-send { width:64px; padding:6px; margin-left:6px; cursor:pointer; }
+        #remote-name, #local-name { position:absolute; pointer-events:none; color:#ffeb8a; font-weight:bold; text-shadow:0 0 6px #000; }
+        #sponsor-left, #sponsor-right {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 55;
+            padding: 8px 10px;
+            border: 1px solid #0f0;
+            background: rgba(0,0,0,0.85);
+            color: #afff7a;
+            font-size: 12px;
+            width: 140px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,255,0,0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        #sponsor-left:hover, #sponsor-right:hover { transform: translateY(-2px); background: rgba(0,32,0,0.95); }
+        #sponsor-left { left: 10px; bottom: 70px; }
+        #sponsor-right { left: 10px; bottom: 10px; }
+        #hud .hint { margin-top: 8px; color: #d1ff70; font-size: 12px; font-weight: bold; }
+        .chat-alert { color: #ff6666; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <div id="pos" class="glitch" style="font-size: 24px; font-weight: bold;">POS: 21/21</div>
+        <div id="dist">DISTANZA: 0m</div>
+        <div id="kmh">VEL: 0 KM/H</div>
+        <div>BOOST (PRENDI PATATINE):</div>
+        <div id="boost-bar-container"><div id="boost-bar"></div></div>
+        <div class="hint">Premi Z per scendere giù e raggiungere le patatine!</div>
+        <div class="hint">Clicca sullo schermo per lanciare la lattina di Bepsi.</div>
+        <div id="remote-info" style="margin-top:10px; font-size:14px;">AVVERSARIO: non connesso</div>
+    </div>
+    <div id="sponsor-left" data-sponsor="baffuto">Baffuto Chips San Nicola</div>
+    <div id="sponsor-right" data-sponsor="gangster">Gangster Chips Z</div>
+    <div id="multiplayer-ui" style="position:absolute; top:20px; right:20px; color:#0f0; background: rgba(0,20,0,0.8); padding:15px; border:2px solid #0f0; max-width:260px; font-size:14px; z-index: 10;">
+        <div style="font-weight:bold; margin-bottom:8px;">MULTIPLAYER FIREBASE</div>
+        <div id="mp-status">Stato: offline</div>
+        <div style="margin-top:8px; word-break:break-all;">Room ID: <span id="peer-id">...</span></div>
+        <div style="margin-top:8px;">Nome: <input id="username-input" placeholder="Il tuo nome" style="width:130px; padding:4px; margin-left:6px;" /> <span id="local-username" style="margin-left:6px; color:#afff7a;"></span></div>
+        <button id="host-btn" class="menu-btn" style="margin-top:8px; width:100%; padding:8px;">CREA STANZA</button>
+        <input id="join-id" placeholder="ID stanza amico" style="width:100%; margin-top:8px; padding:8px; box-sizing:border-box;" />
+        <button id="join-btn" class="menu-btn" style="margin-top:6px; width:100%; padding:8px;">ENTRA STANZA</button>
+        <button id="room-start-btn" class="menu-btn" style="margin-top:8px; width:100%; padding:8px; display:none;">AVVIA PARTITA</button>
+        <div id="room-info" style="margin-top:8px; font-size:13px; color:#afff7a;">Giocatori in stanza: 0/21</div>
+        <button id="drink-bepsi-btn" class="menu-btn" style="margin-top:8px; width:100%; padding:8px;">Bevi la Bepsi</button>
+        <div id="mp-log" style="margin-top:8px; min-height:22px; font-size:13px; color:#ff0;"></div>
+        <div id="camera-mode" style="display:flex; gap:6px; margin-top:8px;">
+            <button id="cam-first-btn" class="menu-btn" style="flex:1; padding:8px;">1ª</button>
+            <button id="cam-third-btn" class="menu-btn" style="flex:1; padding:8px;">3ª</button>
+            <button id="cam-free-btn" class="menu-btn" style="flex:1; padding:8px;">Libera</button>
+        </div>
+        <div id="chat-panel">
+            <div id="chat-messages"></div>
+            <div style="display:flex; margin-top:6px; gap:6px;">
+                <input id="chat-input" placeholder="Scrivi un messaggio..." style="flex:1; padding:6px;" />
+                <button id="chat-send" class="menu-btn" style="padding:8px;">Invia</button>
+            </div>  
+            <div id="team-radio-panel">
+                <button class="team-radio-btn" data-radio="attack">Attacco sincronizzato</button>
+                <button class="team-radio-btn" data-radio="defend">Copri la corsia</button>
+                <button class="team-radio-btn" data-radio="boost">Boost urgente</button>
+                <button class="team-radio-btn" data-radio="fallback">Ritiro tattico</button>
+            </div>
+        </div>
+    </div>
+    <div id="finish-screen">
+        <h1 id="result-text">GARA FINITA</h1>
+        <button onclick="location.reload()" style="padding:10px; cursor:pointer;">RIGIOCA</button>
+    </div>
+    <div id="punch-ui" style="position:absolute; bottom:20px; left:20px; color:#0f0; background: rgba(0,20,0,0.85); padding:15px; border:2px solid #0f0; max-width:260px; z-index: 10;">
+        <button id="show-punch-btn" class="action-button">Mostra pugno</button>
+        <div id="punch-container">
+            <div id="punch" title="Pugno">👊</div>
+            <div id="cart" title="Carrello">🛒</div>
+            <div id="punch-message"></div>
+        </div>
+    </div>
+    <div id="main-menu">
+        <div id="menu-panel">
+            <h1>CHIP-1 WORLD</h1>
+            <p style="color:#afff7a; margin-bottom:16px;">Scegli la modalità, inserisci l'ID Game e connettiti ai tuoi amici prima di partire.</p>
+            <input id="game-id-input" class="menu-input" type="text" placeholder="ID Game / Room" />
+            <select id="mode-select" class="menu-select">
+                <option value="free">Free Race</option>
+                <option value="duel">1vs1 Duel</option>
+            </select>
+            <select id="team-select" class="menu-select">
+                <option value="red">Team Red</option>
+                <option value="blue">Team Blue</option>
+            </select>
+            <div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">
+                <button id="mute-btn" class="menu-btn" style="flex:1;">MUTE</button>
+                <input id="volume-range" type="range" min="0" max="1" step="0.05" value="0.35" style="flex:1;" />
+            </div>
+            <button id="start-btn" class="menu-btn" style="margin-top:12px;">START</button>
+            <button id="menu-options-btn" class="menu-btn">OPZIONI</button>
+            <button id="menu-credits-btn" class="menu-btn">DEVELOPERS</button>
+            <div id="menu-text" style="display:block;">
+                <p>Usa W/S per accelerare/frenare e A/D per muoverti lateralmente nel tunnel. Raggiungi il traguardo e sconfiggi il tuo avversario.</p>
+            </div>
+            <div id="version-label">v5.0.0 Alpha Prototype Sperimental</div>
+            <div id="options-panel">
+                <h3>Opzioni</h3>
+                <p>Comandi: W = avanti, S = indietro, A = sinistra, D = destra.</p>
+                <button id="close-panel-btn" class="menu-btn">CHIUDI</button>
+            </div>
+            <div id="developers-panel">
+                <h3>Developers</h3>
+                <p>Niccolò Monti<br>Bartolo Regine<br>Salvatore Pisani</p>
+                <button id="close-panel-btn" class="menu-btn">CHIUDI</button>
+            </div>
+        </div>
+    </div>
+    <div id="lid-effect"></div>
+    <audio id="background-music" loop preload="auto" style="display:none;"></audio>
+    <div id="end-screen">
+        <h1 id="end-result-text">FINE GARA</h1>
+        <div class="credit-block">
+            <h2>CREDITI</h2>
+            <p>Niccolò Monti<br>Bartolo Regine<br>Salvatore Pisani</p>
+        </div>
+        <div class="poem-block">
+            <h2>Poema</h2>
+            <p>Hey, Tu... svegliati... è solo un gioco... un sogno... tu... mi riconosci?<br>
+            Sono Niccolò, lui è Bartolo e lui è Salvatore, siamo i 3 creatori gli dei...<br>
+            tu.. ora carissimo/a videogiocatrice o videogiocatore, hai raggiunto il nostro livello,<br>
+            sei uscito da quel pacco di patatine. Amore... hai sognato, bene, meglio, cose divertenti e brutte<br>
+            ma noi ti abbiamo guardato... SEI IL MIGLIORE! Ora vai, svegliati amico!</p>
+        </div>
+        <p>Soundtrack: <strong>La Mela d'Oro</strong> - Oreste De Santis</p>
+        <audio id="finish-audio" controls src="http://www.orestedesantis.com/teatroperbambini/iliade/mela.mp3" preload="auto"></audio>
+        <p style="color:#afff7a; margin-top:12px; font-size:14px;">Premi SPAZIO per accelerare l'end credit.</p>
+        <button id="restart-btn" class="action-button" style="margin-top:20px;">RIGIOCA</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+
+    <script>
+        const GAME_VERSION = 'v5.0.0 Alpha Prototype Sperimental';
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwilO_vlR1NU4xjJc3D5g9CV8Gm0dAaS0",
+            authDomain: "leggenda-coding.firebaseapp.com",
+            databaseURL: "https://leggenda-coding-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "leggenda-coding",
+            storageBucket: "leggenda-coding.firebasestorage.app",
+            messagingSenderId: "499423593248",
+            appId: "1:499423593248:web:651ccaa761dd7add814d45"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const firebaseDb = firebase.database();
+        const BACKGROUND_MUSIC_SRC = './Zitti e Buoni.mp3';
+        const MAX_PLAYERS = 21;
+        const TEAM_RADIO_MESSAGES = {
+            attack: 'Attacco sincronizzato: spingiamo tutti insieme!',
+            defend: 'Copri la corsia: blocca il traffico nemico!',
+            boost: 'Boost urgente: accendi i motori!',
+            fallback: 'Ritiro tattico: ridistribuiamoci!' 
+        };
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x221100, 0.015);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        let speed = 0.5;
+        let boostAmount = 0;
+        let isBoosting = false;
+        const trackLength = 2500;
+        const keys = { w: false, a: false, s: false, d: false, z: false };
+        let gameActive = false;
+        let gameStarted = false;
+        const playerPos = new THREE.Vector3(0, 0, 0);
+        let cameraMode = 'first';
+        const orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.1;
+        orbitControls.enabled = false;
+        orbitControls.target.copy(playerPos);
+
+        const tunnelGeom = new THREE.CylinderGeometry(15, 15, trackLength, 10, 100, true);
+        const tunnelMat = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa,
+            side: THREE.BackSide,
+            metalness: 1,
+            roughness: 0.3
+        });
+        const tunnel = new THREE.Mesh(tunnelGeom, tunnelMat);
+        tunnel.rotation.x = Math.PI / 2;
+        tunnel.position.z = -trackLength / 2;
+        scene.add(tunnel);
+
+        const headLight = new THREE.SpotLight(0xffffff, 2, 150, 0.5);
+        headLight.position.copy(playerPos);
+        headLight.target.position.set(playerPos.x, playerPos.y, playerPos.z - 10);
+        scene.add(headLight);
+        scene.add(headLight.target);
+        scene.add(new THREE.AmbientLight(0xffcc00, 0.3));
+
+        const bots = [];
+        const botGeom = new THREE.BoxGeometry(1.5, 0.8, 2.5);
+
+        function getRandomBotName() {
+            const common = ['Rocco','Gino','Luca','Marta','Sara','Paolo','Vittorio','Mina','Carlos','Ana','Rita','Hugo','Lola','Moro','Nico','Ale'];
+            // rare "test" bots (2% chance)
+            if (Math.random() < 0.02) return 'test' + Math.floor(Math.random() * 1000);
+            const name = common[Math.floor(Math.random() * common.length)];
+            // append a short numeric suffix sometimes
+            if (Math.random() < 0.12) return name + Math.floor(Math.random() * 90 + 10);
+            return name;
+        }
+
+        for (let i = 0; i < 21; i++) {
+            const botMat = new THREE.MeshPhongMaterial({ color: new THREE.Color(`hsl(${i * 15}, 100%, 50%)`) });
+            const bot = new THREE.Mesh(botGeom, botMat);
+            bot.position.set((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, -10 - (i * 12));
+            bot.userData = {
+                baseSpeed: 0.4 + Math.random() * 0.2,
+                phase: Math.random() * Math.PI,
+                username: getRandomBotName()
+            };
+            scene.add(bot);
+            bots.push(bot);
+        }
+
+        const chips = [];
+        const chipGeom = new THREE.TorusGeometry(1, 0.3, 8, 24);
+        const chipMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+        for (let i = 0; i < 60; i++) {
+            const chip = new THREE.Mesh(chipGeom, chipMat);
+            chip.position.set((Math.random() - 0.5) * 20, Math.random() * 18 - 12, -Math.random() * trackLength);
+            scene.add(chip);
+            chips.push(chip);
+        }
+
+        const snackPacks = [];
+        const snackGeom = new THREE.BoxGeometry(1.6, 0.7, 1);
+        const snackMat = new THREE.MeshPhongMaterial({ color: 0xff6600, emissive: 0x662200 });
+        for (let i = 0; i < 8; i++) {
+            const snack = new THREE.Mesh(snackGeom, snackMat);
+            snack.position.set((Math.random() - 0.5) * 18, Math.random() * 10 - 8, -Math.random() * trackLength);
+            snack.userData = { eaten: false };
+            scene.add(snack);
+            snackPacks.push(snack);
+        }
+
+        const bepsiCan = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.1, 16), new THREE.MeshPhongMaterial({ color: 0x0033aa, emissive: 0x001144 }));
+        bepsiCan.rotation.x = Math.PI / 2;
+        bepsiCan.visible = false;
+        scene.add(bepsiCan);
+        let bepsiActive = false;
+        let bepsiThrower = '';
+        let bepsiSpeed = 0;
+        let bepsiAvailable = true;
+        let bepsiDrank = false;
+        let bepsiHeld = false;
+
+        const remotePlayer = new THREE.Mesh(botGeom, new THREE.MeshPhongMaterial({ color: 0x00ff99 }));
+        remotePlayer.position.set(0, 0, -20);
+        remotePlayer.visible = false;
+        scene.add(remotePlayer);
+
+        const cartMaterial = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.9, roughness: 0.25 });
+        const wireMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
+        const neonMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 });
+        const cartGroup = new THREE.Group();
+
+        const basket = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.4, 4.5), cartMaterial);
+        basket.position.set(0, 1.2, 0);
+        const basketEdges = new THREE.LineSegments(new THREE.EdgesGeometry(basket.geometry), wireMaterial);
+        basket.add(basketEdges);
+        cartGroup.add(basket);
+
+        const sideFrame = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.5, 0.2), cartMaterial);
+        sideFrame.position.set(0, 1.7, -2.15);
+        cartGroup.add(sideFrame);
+
+        const bottomPlate = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.2, 4.8), cartMaterial);
+        bottomPlate.position.set(0, 0.5, 0);
+        cartGroup.add(bottomPlate);
+
+        const neonStrip = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.1, 0.2), neonMaterial);
+        neonStrip.position.set(0, 0.9, 2.25);
+        cartGroup.add(neonStrip);
+
+        const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.2, 12), cartMaterial);
+        handleBar.rotation.z = Math.PI / 2;
+        handleBar.position.set(0, 2.25, -1.8);
+        cartGroup.add(handleBar);
+
+        const handleGrip = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.08, 12, 24), cartMaterial);
+        handleGrip.rotation.x = Math.PI / 2;
+        handleGrip.position.set(0, 2.25, -0.2);
+        cartGroup.add(handleGrip);
+
+        const wheelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+        for (let i = 0; i < 4; i++) {
+            const wheel = new THREE.Mesh(wheelGeometry, new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.7, roughness: 0.4 }));
+            wheel.rotation.x = Math.PI / 2;
+            wheel.position.set((i % 2 === 0 ? -1.4 : 1.4), 0.3, (i < 2 ? 1.9 : -1.9));
+            cartGroup.add(wheel);
+        }
+
+        const boostGlow = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.05, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.12 }));
+        boostGlow.rotation.x = Math.PI / 2;
+        boostGlow.position.set(0, 0.45, -3.3);
+        cartGroup.add(boostGlow);
+
+        cartGroup.userData = { glow: neonStrip, boostGlow };
+        cartGroup.scale.set(1.0, 1.0, 1.0);
+        cartGroup.visible = false;
+        scene.add(cartGroup);
+
+        const mpStatus = document.getElementById('mp-status');
+        const peerIdText = document.getElementById('peer-id');
+        const mpLog = document.getElementById('mp-log');
+        const joinInput = document.getElementById('join-id');
+        const hostBtn = document.getElementById('host-btn');
+        const joinBtn = document.getElementById('join-btn');
+        const remoteInfo = document.getElementById('remote-info');
+        const usernameInput = document.getElementById('username-input');
+        const localUsernameSpan = document.getElementById('local-username');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+        const camFirstBtn = document.getElementById('cam-first-btn');
+        const camThirdBtn = document.getElementById('cam-third-btn');
+        const camFreeBtn = document.getElementById('cam-free-btn');
+
+        let roomRef = null;
+        let roomId = '';
+        let isHost = false;
+        let localPlayerId = '';
+        let roomHostId = '';
+        let roomStatus = 'idle';
+        let roomPlayers = {};
+        let roomChat = [];
+        let seenChatKeys = new Set();
+        let seenBoostKeys = new Set();
+        let currentMode = 'free';
+        let currentTeam = 'red';
+        let username = 'Player' + Math.floor(Math.random() * 9000 + 1000);
+        usernameInput.value = username;
+        localUsernameSpan.innerText = username;
+        const remoteState = { x: 0, y: 0, z: -10, speed: 0, boost: 0, connected: false, username: 'Avversario' };
+
+        const remoteNameDiv = document.createElement('div');
+        remoteNameDiv.id = 'remote-name';
+        remoteNameDiv.style.pointerEvents = 'none';
+        remoteNameDiv.style.position = 'absolute';
+        remoteNameDiv.style.color = '#ffeb8a';
+        remoteNameDiv.style.fontWeight = 'bold';
+        remoteNameDiv.style.textShadow = '0 0 6px #000';
+        document.body.appendChild(remoteNameDiv);
+
+        const localNameDiv = document.createElement('div');
+        localNameDiv.id = 'local-name';
+        localNameDiv.style.pointerEvents = 'none';
+        localNameDiv.style.position = 'absolute';
+        localNameDiv.style.color = '#ffeb8a';
+        localNameDiv.style.fontWeight = 'bold';
+        localNameDiv.style.textShadow = '0 0 6px #000';
+        document.body.appendChild(localNameDiv);
+
+        const hud = document.getElementById('hud');
+        const multiplayerUI = document.getElementById('multiplayer-ui');
+        const punchUI = document.getElementById('punch-ui');
+        const mainMenu = document.getElementById('main-menu');
+        const optionsPanel = document.getElementById('options-panel');
+        const developersPanel = document.getElementById('developers-panel');
+        const startBtn = document.getElementById('start-btn');
+        const menuOptionsBtn = document.getElementById('menu-options-btn');
+        const menuCreditsBtn = document.getElementById('menu-credits-btn');
+        const gameIdInput = document.getElementById('game-id-input');
+        const modeSelect = document.getElementById('mode-select');
+        const teamSelect = document.getElementById('team-select');
+        const roomStartBtn = document.getElementById('room-start-btn');
+        const roomInfo = document.getElementById('room-info');
+        const muteBtn = document.getElementById('mute-btn');
+        const volumeRange = document.getElementById('volume-range');
+        const closePanelBtns = document.querySelectorAll('#close-panel-btn');
+        const endScreen = document.getElementById('end-screen');
+        const lidEffect = document.getElementById('lid-effect');
+        const finishAudio = document.getElementById('finish-audio');
+        const backgroundMusic = document.getElementById('background-music');
+        const endResultText = document.getElementById('end-result-text');
+        const restartBtn = document.getElementById('restart-btn');
+        const teamRadioButtons = document.querySelectorAll('.team-radio-btn');
+        const teamRadioMessages = {
+            attack: 'Attacco sincronizzato: tutti insieme verso la linea nemica.',
+            defend: 'Protezione attiva: mantieni la tua corsia.',
+            boost: 'Boost urgente: spingi ora!',
+            fallback: 'Ritiro tattico: riorganizziamo il gruppo.'
+        };
+
+        function setRoomUiState() {
+            peerIdText.innerText = roomId || '...';
+            mpStatus.innerText = !roomId ? 'Stato: offline' : (isHost ? 'Stato: host in stanza' : 'Stato: connesso alla stanza');
+            roomInfo.innerText = roomId ? `Stanza: ${roomId} · Giocatori: ${Object.keys(roomPlayers).length}/21` : 'Giocatori in stanza: 0/21';
+            roomStartBtn.style.display = (isHost && roomId) ? 'block' : 'none';
+        }
+
+        function detachRoomListeners() {
+            if (roomRef) {
+                roomRef.off('value');
+                roomRef.child('chat').off('child_added');
+                roomRef.child('boostEvents').off('child_added');
+            }
+        }
+
+        function syncLocalPlayerState() {
+            if (!roomRef || !localPlayerId) return;
+            roomRef.child('players').child(localPlayerId).set({
+                username,
+                x: playerPos.x,
+                y: playerPos.y,
+                z: playerPos.z,
+                speed,
+                boost: boostAmount,
+                connected: true,
+                role: isHost ? 'host' : 'client',
+                lastSeen: Date.now()
+            });
+        }
+
+        function pushRoomChat(who, text) {
+            if (!roomRef || !roomId) {
+                appendChat(who, text);
+                return;
+            }
+            roomRef.child('chat').push({
+                username: who,
+                text,
+                createdAt: Date.now()
+            });
+        }
+
+        function pushBoostEvent(type, payload) {
+            if (!roomRef || !roomId) return;
+            roomRef.child('boostEvents').push({
+                type,
+                createdAt: Date.now(),
+                ...payload
+            });
+        }
+
+        function applyRoomSnapshot(room) {
+            roomPlayers = room.players || {};
+            roomStatus = room.status || 'waiting';
+            roomHostId = room.hostId || '';
+            roomChat = Object.entries(room.chat || {}).map(([key, entry]) => ({ key, ...entry }));
+            roomChat.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            const playerEntries = Object.entries(roomPlayers);
+            let remoteEntry = null;
+            for (const [playerId, player] of playerEntries) {
+                if (playerId !== localPlayerId) {
+                    remoteEntry = [playerId, player];
+                    break;
+                }
+            }
+            if (remoteEntry) {
+                const [, player] = remoteEntry;
+                remoteState.connected = true;
+                remoteState.username = player.username || 'Avversario';
+                remoteState.x = player.x ?? remoteState.x;
+                remoteState.y = player.y ?? remoteState.y;
+                remoteState.z = player.z ?? remoteState.z;
+                remoteState.speed = player.speed ?? remoteState.speed;
+                remoteState.boost = player.boost ?? remoteState.boost;
+                remotePlayer.visible = true;
+            } else {
+                remoteState.connected = false;
+                remotePlayer.visible = false;
+            }
+            setRoomUiState();
+        }
+
+        function attachRoomListener(ref) {
+            ref.on('value', snapshot => {
+                const room = snapshot.val() || {};
+                applyRoomSnapshot(room);
+            });
+            ref.child('chat').on('child_added', child => {
+                if (!child.key || seenChatKeys.has(child.key)) return;
+                seenChatKeys.add(child.key);
+                const message = child.val() || {};
+                appendChat(message.username || 'Sistema', message.text || '');
+            });
+            ref.child('boostEvents').on('child_added', child => {
+                if (!child.key || seenBoostKeys.has(child.key)) return;
+                seenBoostKeys.add(child.key);
+                const event = child.val() || {};
+                if (event.message) {
+                    appendChat(event.username || 'Sistema', event.message);
+                }
+            });
+        }
+
+        function createRoom() {
+            roomId = (gameIdInput.value || '').trim().toUpperCase() || Math.random().toString(36).slice(2, 8).toUpperCase();
+            gameIdInput.value = roomId;
+            joinInput.value = roomId;
+            isHost = true;
+            localPlayerId = 'host-' + Date.now();
+            roomHostId = localPlayerId;
+            roomStatus = 'waiting';
+            detachRoomListeners();
+            roomRef = firebaseDb.ref('rooms/' + roomId);
+            roomRef.set({
+                hostId: localPlayerId,
+                status: 'waiting',
+                createdAt: Date.now(),
+                players: {},
+                chat: {},
+                boostEvents: {}
+            }).then(() => {
+                roomRef.child('players').child(localPlayerId).set({
+                    username,
+                    x: playerPos.x,
+                    y: playerPos.y,
+                    z: playerPos.z,
+                    speed,
+                    boost: boostAmount,
+                    connected: true,
+                    role: 'host',
+                    lastSeen: Date.now()
+                });
+                roomRef.child('players').child(localPlayerId).onDisconnect().remove();
+                attachRoomListener(roomRef);
+                setRoomUiState();
+                logMP('Stanza creata. Condividi l\'ID con il tuo avversario.');
+                appendChat('Sistema', 'Stanza creata. Aspetto un avversario.');
+            }).catch(err => {
+                logMP('Errore creazione stanza: ' + (err.message || err));
+            });
+        }
+
+        function joinRoom() {
+            roomId = joinInput.value.trim().toUpperCase();
+            if (!roomId) return logMP('Inserisci un ID stanza valido.');
+            gameIdInput.value = roomId;
+            isHost = false;
+            localPlayerId = 'client-' + Date.now();
+            roomHostId = '';
+            roomStatus = 'waiting';
+            detachRoomListeners();
+            roomRef = firebaseDb.ref('rooms/' + roomId);
+            roomRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    throw new Error('La stanza non esiste.');
+                }
+                roomRef.child('players').child(localPlayerId).set({
+                    username,
+                    x: playerPos.x,
+                    y: playerPos.y,
+                    z: playerPos.z,
+                    speed,
+                    boost: boostAmount,
+                    connected: true,
+                    role: 'client',
+                    lastSeen: Date.now()
+                });
+                roomRef.child('players').child(localPlayerId).onDisconnect().remove();
+                attachRoomListener(roomRef);
+                setRoomUiState();
+                logMP('Sei entrato nella stanza.');
+                pushRoomChat('Sistema', `${username} è entrato nella stanza.`);
+            }).catch(err => {
+                logMP('Errore entrata stanza: ' + (err.message || err));
+            });
+        }
+
+        function sendTeamRadio(type) {
+            const message = teamRadioMessages[type] || 'Comando squadra inviato.';
+            appendChat('Team Radio', message);
+            if (roomRef && roomId) {
+                pushRoomChat('Team Radio', message);
+                pushBoostEvent('teamRadio', { username, message, radio: type });
+            } else {
+                botAnswer(message);
+            }
+        }
+
+        teamRadioButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const radioType = button.dataset.radio;
+                sendTeamRadio(radioType);
+                logMP('Team Radio inviato: ' + (teamRadioMessages[radioType] || radioType));
+            });
+        });
+
+        hostBtn.addEventListener('click', createRoom);
+        joinBtn.addEventListener('click', joinRoom);
+        roomStartBtn.addEventListener('click', () => {
+            if (!isHost || !roomRef) return;
+            roomRef.update({ status: 'playing' });
+            logMP('Partita avviata dalla stanza host.');
+        });
+
+        backgroundMusic.preload = 'auto';
+        backgroundMusic.volume = 0.4;
+        backgroundMusic.muted = false;
+        backgroundMusic.addEventListener('error', () => {
+            console.warn('Errore caricamento audio di background');
+        });
+
+        function logMP(text) {
+            mpLog.innerText = text;
+        }
+
+        const BOT_CHAT_RESPONSES = [
+            'Sto arrivando sulla tua corsia.',
+            'Copertura pronta, sposto il traffico.',
+            'Boost in arrivo: tieni duro!',
+            'Vedo un nemico in avvicinamento.',
+            'Stiamo formando la difesa centrale.',
+            'Ritroviamoci e ripartiamo insieme.',
+            'Supporto in arrivo: tieni la linea.',
+            'Attacco coordinato: spingo ora!'
+        ];
+
+        function getReplyBotName() {
+            if (!bots.length) return 'Bot';
+            const bot = bots[Math.floor(Math.random() * bots.length)];
+            return bot.userData?.username || 'Bot';
+        }
+
+        function getBotReplyMessage(input) {
+            const text = String(input).toLowerCase();
+            if (text.includes('attack') || text.includes('attacco')) return 'Capito! Vado all’assalto.';
+            if (text.includes('copri') || text.includes('difendi')) return 'Copertura attivata, non lasciamo passare nessuno.';
+            if (text.includes('boost')) return 'Boost attivo: pronta la spinta.';
+            if (text.includes('ritiro') || text.includes('fallback')) return 'Ritiro tattico: riorganizzo la squadra.';
+            const reply = BOT_CHAT_RESPONSES[Math.floor(Math.random() * BOT_CHAT_RESPONSES.length)];
+            return reply;
+        }
+
+        function botAnswer(text) {
+            const reply = getBotReplyMessage(text);
+            const name = getReplyBotName();
+            setTimeout(() => {
+                appendChat(name, reply);
+            }, 600 + Math.random() * 900);
+        }
+
+        function throwBepsi() {
+            if (!gameActive || !bepsiAvailable || !bepsiHeld) return;
+            // consume held can and launch
+            bepsiHeld = false;
+            bepsiAvailable = false;
+            bepsiActive = true;
+            bepsiThrower = username;
+            bepsiSpeed = 1.4;
+            bepsiCan.position.copy(playerPos).add(new THREE.Vector3(0, 0, -4));
+            bepsiCan.position.y = playerPos.y;
+            bepsiCan.visible = true;
+            appendChat(username, 'Burp! Ho lanciato una lattina di Bepsi!');
+            pushBoostEvent('bepsi', { username, message: `${username} ha lanciato una lattina di Bepsi!` });
+            // reset drink button text
+            const btn = document.getElementById('drink-bepsi-btn');
+            if (btn) btn.innerText = 'Bevi la Bepsi';
+            // small cooldown before Bepsi can be picked up again
+            setTimeout(() => { bepsiAvailable = true; }, 12000);
+        }
+
+        function drinkBepsi() {
+            if (!gameActive || !bepsiAvailable) return;
+            const btn = document.getElementById('drink-bepsi-btn');
+            if (!bepsiHeld) {
+                // pick up the can (hold)
+                bepsiHeld = true;
+                if (btn) btn.innerText = 'Lancia la Bepsi';
+                appendChat(username, 'Hai preso la lattina di Bepsi. Ora puoi lanciarla cliccando Lancia o cliccando lo schermo.');
+                return;
+            }
+            // if already held, throw
+            if (bepsiHeld) {
+                throwBepsi();
+                if (btn) btn.innerText = 'Bevi la Bepsi';
+            }
+        }
+
+        setInterval(syncLocalPlayerState, 100);
+
+        function appendChat(who, text) {
+            const el = document.createElement('div');
+            el.className = 'chat-message';
+            el.innerHTML = `<span class="who">${escapeHtml(who)}:</span> ${escapeHtml(text)}`;
+            chatMessages.appendChild(el);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendAlert(text) {
+            const el = document.createElement('div');
+            el.className = 'chat-message chat-alert';
+            el.textContent = text;
+            chatMessages.appendChild(el);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        chatSend.addEventListener('click', () => {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            appendChat(username, text);
+            if (roomRef && roomId) {
+                pushRoomChat(username, text);
+            } else {
+                botAnswer(text);
+            }
+            chatInput.value = '';
+        });
+
+        const sponsorLeft = document.getElementById('sponsor-left');
+        const sponsorRight = document.getElementById('sponsor-right');
+        const drinkBepsiBtn = document.getElementById('drink-bepsi-btn');
+
+        function sponsorPowerUp(sponsor) {
+            const amount = sponsor === 'baffuto' ? 35 : 45;
+            const label = sponsor === 'baffuto' ? 'Baffuto Chips San Nicola' : 'Gangster Chips Z';
+            boostAmount = Math.min(boostAmount + amount, 100);
+            appendChat(label, `Power-up ricevuto! +${amount} boost dalle patatine sponsor.`);
+            logMP(`${label} attivato!`);
+        }
+
+        sponsorLeft.addEventListener('click', () => {
+            sponsorPowerUp('baffuto');
+            pushBoostEvent('sponsor', { username, sponsor: 'baffuto', message: `${username} ha raccolto il power-up Baffuto Chips San Nicola!` });
+        });
+        sponsorRight.addEventListener('click', () => {
+            sponsorPowerUp('gangster');
+            pushBoostEvent('sponsor', { username, sponsor: 'gangster', message: `${username} ha raccolto il power-up Gangster Chips Z!` });
+        });
+        drinkBepsiBtn.addEventListener('click', drinkBepsi);
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); chatSend.click(); }
+        });
+
+        usernameInput.addEventListener('change', () => {
+            username = usernameInput.value.trim() || username;
+            localUsernameSpan.innerText = username;
+            if (roomRef && localPlayerId) {
+                syncLocalPlayerState();
+            }
+        });
+
+        
+
+        document.addEventListener('keydown', (e) => {
+            const key = String(e.key || '').toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+            if (e.code === 'KeyZ') keys.z = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = String(e.key || '').toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+            if (e.code === 'KeyZ') keys.z = false;
+        });
+        document.addEventListener('click', (e) => {
+            if (!gameActive) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return;
+            // only throw if player has first picked up the can
+            if (bepsiHeld) throwBepsi();
+        });
+
+        function updatePhysics() {
+            if (keys.w) speed = Math.min(speed + 0.01, isBoosting ? 1.5 : 0.8);
+            else if (keys.s) speed = Math.max(speed - 0.02, 0.1);
+            else speed *= 0.99;
+
+            if (keys.a) playerPos.x -= 0.2;
+            if (keys.d) playerPos.x += 0.2;
+            if (keys.w) playerPos.y += (playerPos.y < 10) ? 0.05 : 0;
+            if (keys.s) playerPos.y -= (playerPos.y > -10) ? 0.05 : 0;
+            if (keys.z) playerPos.y -= 0.08;
+
+            playerPos.x = THREE.MathUtils.clamp(playerPos.x, -12, 12);
+            playerPos.y = THREE.MathUtils.clamp(playerPos.y, -15, 10);
+            playerPos.z -= speed;
+
+            headLight.position.copy(playerPos);
+            headLight.target.position.set(playerPos.x, playerPos.y, playerPos.z - 10);
+            headLight.target.updateMatrixWorld();
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+
+            updatePhysics();
+
+            let rank = 1;
+            const myDist = Math.abs(playerPos.z);
+
+            bots.forEach(bot => {
+                bot.position.z -= bot.userData.baseSpeed;
+                bot.position.x += Math.sin(Date.now() * 0.002 + bot.userData.phase) * 0.1;
+                bot.rotation.z += 0.05;
+                if (bot.position.z < playerPos.z) rank++;
+            });
+
+            chips.forEach(chip => {
+                chip.rotation.y += 0.1;
+                if (playerPos.distanceTo(chip.position) < 2) {
+                    chip.position.z += 10;
+                    boostAmount = Math.min(boostAmount + 30, 100);
+                }
+            });
+
+            if (boostAmount > 0) {
+                isBoosting = true;
+                boostAmount -= 0.5;
+                speed = Math.min(speed + 0.02, 1.6);
+            } else {
+                isBoosting = false;
+            }
+
+            snackPacks.forEach(snack => {
+                snack.rotation.y += 0.03;
+                if (!snack.userData.eaten && playerPos.distanceTo(snack.position) < 2) {
+                    snack.userData.eaten = true;
+                    scene.remove(snack);
+                    boostAmount = Math.min(boostAmount + 40, 100);
+                    appendChat('PATATINE', 'Hai mangiato un pacco di patatine! Boost +40');
+                }
+            });
+
+            if (bepsiActive) {
+                bepsiCan.position.z -= bepsiSpeed;
+                bepsiCan.position.x += Math.sin(Date.now() * 0.005) * 0.02;
+                if (bepsiCan.position.distanceTo(playerPos) > 130 || bepsiCan.position.z < playerPos.z - 120) {
+                    bepsiActive = false;
+                    bepsiCan.visible = false;
+                } else {
+                    let hitTarget = null;
+                    let targetName = '';
+                    if (remoteState.connected && remotePlayer.visible && bepsiCan.position.distanceTo(remotePlayer.position) < 2.2) {
+                        hitTarget = remotePlayer;
+                        targetName = remoteState.username || 'Amico';
+                    }
+                    if (!hitTarget) {
+                        for (let bot of bots) {
+                            if (bot.position.distanceTo(bepsiCan.position) < 2.2) {
+                                hitTarget = bot;
+                                targetName = bot.userData.username || 'Bot';
+                                break;
+                            }
+                        }
+                    }
+                    if (hitTarget) {
+                        bepsiActive = false;
+                        bepsiCan.visible = false;
+                        if (hitTarget === remotePlayer) {
+                            remoteState.connected = false;
+                            remotePlayer.visible = false;
+                        }
+                        appendAlert(`${targetName} si è schiantato contro una lattina di Bepsi lanciata da [${bepsiThrower}]`);
+                    }
+                }
+            }
+
+            document.getElementById('pos').innerText = `POS: ${rank}/21`;
+            document.getElementById('kmh').innerText = `VEL: ${Math.floor(speed * 400)} KM/H`;
+            document.getElementById('dist').innerText = `TRAGUARDO: ${Math.floor(trackLength - myDist)}m`;
+            document.getElementById('boost-bar').style.width = boostAmount + "%";
+
+            if (remoteState.connected) {
+                remotePlayer.position.lerp(new THREE.Vector3(remoteState.x, remoteState.y, remoteState.z), 0.25);
+                remotePlayer.visible = true;
+            } else {
+                remotePlayer.visible = false;
+                // mostra il nome del bot più vicino quando non ci sono avversari umani
+                let nearestBot = null;
+                let nearestDist = Infinity;
+                for (let b of bots) {
+                    const d = playerPos.distanceTo(b.position);
+                    if (d < nearestDist) { nearestDist = d; nearestBot = b; }
+                }
+                if (nearestBot) {
+                    remoteInfo.innerText = 'AVVERSARIO: ' + (nearestBot.userData && nearestBot.userData.username ? nearestBot.userData.username : 'Bot');
+                } else {
+                    remoteInfo.innerText = 'AVVERSARIO: non connesso';
+                }
+            }
+
+            if (cameraMode === 'first') {
+                orbitControls.enabled = false;
+                camera.position.copy(playerPos);
+                camera.lookAt(playerPos.x, playerPos.y, playerPos.z - 10);
+                cartGroup.visible = false;
+            } else if (cameraMode === 'third') {
+                orbitControls.enabled = false;
+                const desired = playerPos.clone().add(new THREE.Vector3(0, 4.5, 11));
+                camera.position.lerp(desired, 0.14);
+                camera.lookAt(playerPos);
+                cartGroup.visible = true;
+                cartGroup.position.copy(playerPos).add(new THREE.Vector3(0, -1.2, 5.2));
+                cartGroup.rotation.y = Math.sin(Date.now() * 0.001) * 0.04;
+                cartGroup.position.y += Math.sin(Date.now() * 0.003) * 0.03;
+            } else {
+                orbitControls.enabled = true;
+                orbitControls.target.copy(playerPos);
+                orbitControls.update();
+                cartGroup.visible = true;
+                cartGroup.position.copy(playerPos).add(new THREE.Vector3(0, -1.0, 4.5));
+                cartGroup.rotation.y = Math.sin(Date.now() * 0.001) * 0.06;
+                cartGroup.position.y += Math.sin(Date.now() * 0.003) * 0.04;
+            }
+
+            const glow = cartGroup.userData.glow;
+            const boostGlow = cartGroup.userData.boostGlow;
+            if (boostAmount > 0) {
+                glow.material.opacity = 0.35 + (boostAmount / 120);
+                boostGlow.material.opacity = 0.15 + (boostAmount / 200);
+                boostGlow.scale.set(1 + boostAmount / 80, 1 + boostAmount / 80, 1);
+            } else {
+                glow.material.opacity = 0.25 + Math.sin(Date.now() * 0.005) * 0.03;
+                boostGlow.material.opacity = 0.08;
+                boostGlow.scale.set(1, 1, 1);
+            }
+
+            try {
+                let posSource = null;
+                let nb = null;
+                if (remoteState.connected) {
+                    posSource = remotePlayer.position.clone();
+                } else {
+                    // find nearest bot
+                    let nd = Infinity;
+                    for (let b of bots) {
+                        const d = playerPos.distanceTo(b.position);
+                        if (d < nd) { nd = d; nb = b; }
+                    }
+                    if (nb) posSource = nb.position.clone();
+                }
+                if (posSource) {
+                    const remoteScreen = posSource.project(camera);
+                    remoteNameDiv.style.display = 'block';
+                    remoteNameDiv.style.left = ((remoteScreen.x + 1) / 2 * window.innerWidth - 40) + 'px';
+                    remoteNameDiv.style.top = ((-remoteScreen.y + 1) / 2 * window.innerHeight - 30) + 'px';
+                    remoteNameDiv.innerText = remoteState.connected ? (remoteState.username || 'Avversario') : (nb && nb.userData && nb.userData.username ? nb.userData.username : 'Bot');
+                } else {
+                    remoteNameDiv.style.display = 'none';
+                }
+
+                const localScreen = playerPos.clone().project(camera);
+                localNameDiv.style.left = ((localScreen.x + 1) / 2 * window.innerWidth - 40) + 'px';
+                localNameDiv.style.top = ((-localScreen.y + 1) / 2 * window.innerHeight - 30) + 'px';
+                localNameDiv.innerText = username;
+            } catch (e) {
+                remoteNameDiv.style.display = 'none';
+            }
+
+            if (myDist >= trackLength) {
+                gameActive = false;
+                showEndCredits(rank);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function showEndCredits(rank) {
+            backgroundMusic.pause();
+            endResultText.innerText = (rank === 1) ? "CAMPIONE DEL MONDO!" : `TI SEI PIAZZATO ${rank}°`;
+            lidEffect.style.display = 'block';
+            lidEffect.style.opacity = '1';
+            finishAudio.currentTime = 0;
+            finishAudio.play().catch(() => {});
+            setTimeout(() => {
+                lidEffect.style.opacity = '0';
+                endScreen.style.display = 'block';
+            }, 600);
+        }
+
+        
+
+        function hideAllInterface() {
+            hud.style.display = 'none';
+            multiplayerUI.style.display = 'none';
+            punchUI.style.display = 'none';
+            endScreen.style.display = 'none';
+        }
+
+        function closePanels() {
+            optionsPanel.style.display = 'none';
+            developersPanel.style.display = 'none';
+        }
+
+        function startGame() {
+            mainMenu.style.display = 'none';
+            hud.style.display = 'block';
+            multiplayerUI.style.display = 'block';
+            punchUI.style.display = 'block';
+            gameActive = true;
+            gameStarted = true;
+            closePanels();
+            backgroundMusic.play().catch(() => {});
+            animate();
+        }
+
+        hideAllInterface();
+        startBtn.addEventListener('click', startGame);
+        menuOptionsBtn.addEventListener('click', () => { openPanel(optionsPanel); });
+        menuCreditsBtn.addEventListener('click', () => { openPanel(developersPanel); });
+        closePanelBtns.forEach(button => button.addEventListener('click', closePanels));
+        restartBtn.addEventListener('click', () => location.reload());
+        camFirstBtn.addEventListener('click', () => { cameraMode = 'first'; orbitControls.enabled = false; logMP('Visuale impostata su 1ª persona'); });
+        camThirdBtn.addEventListener('click', () => { cameraMode = 'third'; orbitControls.enabled = false; logMP('Visuale impostata su 3ª persona'); });
+        camFreeBtn.addEventListener('click', () => { cameraMode = 'free'; orbitControls.enabled = true; logMP('Visuale libera attivata'); });
+
+        function openPanel(panel) {
+            closePanels();
+            panel.style.display = 'block';
+        }
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+
+        const showPunchBtn = document.getElementById('show-punch-btn');
+        const punchContainer = document.getElementById('punch-container');
+        const punch = document.getElementById('punch');
+        const cart = document.getElementById('cart');
+        const punchMessage = document.getElementById('punch-message');
+
+        showPunchBtn.addEventListener('click', () => {
+            punchContainer.style.display = 'block';
+            punchMessage.innerText = 'Clicca il carrello per farlo scivolare con un pugno!';
+        });
+
+        cart.addEventListener('click', () => {
+            punchMessage.innerText = 'Ao! Famme passà!';
+            cart.style.transition = 'transform 0.25s ease';
+            cart.style.transform = 'translateX(40px) rotate(10deg)';
+            setTimeout(() => { cart.style.transform = 'translateX(0px) rotate(0deg)'; }, 300);
+            punch.style.transition = 'transform 0.15s ease';
+            punch.style.transform = 'translateX(8px)';
+            setTimeout(() => { punch.style.transform = 'translateX(0px)'; }, 120);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' || event.key === ' ') {
+                if (endScreen.style.display === 'block') {
+                    if (!finishAudio.paused) {
+                        finishAudio.currentTime = finishAudio.duration || finishAudio.currentTime;
+                        finishAudio.pause();
+                    }
+                    endScreen.style.opacity = '1';
+                }
+            }
+        });
+
+        
+    </script>
+</body>
+</html>
